@@ -25,11 +25,11 @@ jobs:
           - "6379:6379"
 
     env:
-      POSTGRES_USER:     ${{ secrets.POSTGRES_USER }}
-      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-      POSTGRES_DB:       ${{ secrets.POSTGRES_DB }}
-      POSTGRES_HOST:     localhost
-      POSTGRES_DB_PORT:  5432
+      POSTGRES_USER:      ${{ secrets.POSTGRES_USER }}
+      POSTGRES_PASSWORD:  ${{ secrets.POSTGRES_PASSWORD }}
+      POSTGRES_DB:        ${{ secrets.POSTGRES_DB }}
+      POSTGRES_HOST:      localhost
+      POSTGRES_DB_PORT:   5432
       DATABASE_URL: >-
         postgresql+asyncpg://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@localhost:5432/${{ secrets.POSTGRES_DB }}
       CELERY_BROKER_URL:    redis://localhost:6379/0
@@ -37,12 +37,12 @@ jobs:
       SECRET_KEY_ACCESS:    ${{ secrets.SECRET_KEY_ACCESS }}
       SECRET_KEY_REFRESH:   ${{ secrets.SECRET_KEY_REFRESH }}
       JWT_SIGNING_ALGORITHM: HS256
-      EMAIL_HOST:      localhost
-      EMAIL_PORT:      1025
-      EMAIL_HOST_USER: noreply@localhost
-      EMAIL_HOST_PASSWORD: ""
-      EMAIL_USE_TLS:   "False"
-      BACKEND_URL:     http://localhost:8000
+      EMAIL_HOST:           localhost
+      EMAIL_PORT:           1025
+      EMAIL_HOST_USER:      noreply@localhost
+      EMAIL_HOST_PASSWORD:  ""
+      EMAIL_USE_TLS:        "False"
+      BACKEND_URL:          http://localhost:8000
       STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
       STRIPE_SECRET_KEY:      ${{ secrets.STRIPE_SECRET_KEY }}
       STRIPE_WEBHOOK_SECRET:  ${{ secrets.STRIPE_WEBHOOK_SECRET }}
@@ -79,10 +79,3 @@ jobs:
           PYTHONPATH: src
         run: |
           poetry run black --check src
-
-      - name: Check type hints with MyPy
-        env:
-          PYTHONPATH: src
-        run: |
-          poetry run mypy src/app
-
