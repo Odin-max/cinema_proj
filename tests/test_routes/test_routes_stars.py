@@ -16,6 +16,7 @@ from app.models.movie_models import StarModel
 def anyio_backend():
     return "asyncio"
 
+
 @pytest.fixture(scope="function")
 async def engine():
     engine = create_async_engine(
@@ -26,6 +27,7 @@ async def engine():
     yield engine
     await engine.dispose()
 
+
 @pytest.fixture(scope="function")
 async def session(engine):
     AsyncSessionLocal = sessionmaker(
@@ -33,6 +35,7 @@ async def session(engine):
     )
     async with AsyncSessionLocal() as session:
         yield session
+
 
 @pytest.fixture(scope="function")
 def app(session):
@@ -42,11 +45,14 @@ def app(session):
     app.dependency_overrides[get_db] = lambda: session
 
     class User:
-        def __init__(self, id): self.id = id
+        def __init__(self, id):
+            self.id = id
+
     app.dependency_overrides[get_current_user] = lambda: User(id=1)
     app.dependency_overrides[get_current_moderator] = lambda: None
 
     return app
+
 
 @pytest.fixture
 async def client(app):
@@ -65,6 +71,7 @@ async def test_create_star_success(client, session):
     all_stars = (await session.execute(select(StarModel))).scalars().all()
     assert any(s.name == "Alice" for s in all_stars)
 
+
 @pytest.mark.anyio
 async def test_create_star_duplicate(client, session):
     session.add(StarModel(name="Bob"))
@@ -73,11 +80,13 @@ async def test_create_star_duplicate(client, session):
     assert r.status_code == status.HTTP_400_BAD_REQUEST
     assert "already exists" in r.json()["detail"]
 
+
 @pytest.mark.anyio
 async def test_list_stars_empty(client):
     r = await client.get("/stars/")
     assert r.status_code == status.HTTP_200_OK
     assert r.json() == []
+
 
 @pytest.mark.anyio
 async def test_list_stars_some(client, session):
@@ -88,11 +97,13 @@ async def test_list_stars_some(client, session):
     names = [item["name"] for item in r.json()]
     assert set(names) == {"X", "Y"}
 
+
 @pytest.mark.anyio
 async def test_get_star_not_found(client):
     r = await client.get("/stars/123")
     assert r.status_code == status.HTTP_404_NOT_FOUND
     assert "not found" in r.json()["detail"].lower()
+
 
 @pytest.mark.anyio
 async def test_get_star_success(client, session):
@@ -105,10 +116,12 @@ async def test_get_star_success(client, session):
     assert data["id"] == s.id
     assert data["name"] == "Zoe"
 
+
 @pytest.mark.anyio
 async def test_update_star_not_found(client):
     r = await client.put("/stars/999", json={"name": "NewName"})
     assert r.status_code == status.HTTP_404_NOT_FOUND
+
 
 @pytest.mark.anyio
 async def test_update_star_duplicate(client, session):
@@ -119,6 +132,7 @@ async def test_update_star_duplicate(client, session):
     r = await client.put(f"/stars/{b.id}", json={"name": "A"})
     assert r.status_code == status.HTTP_400_BAD_REQUEST
     assert "already in use" in r.json()["detail"].lower()
+
 
 @pytest.mark.anyio
 async def test_update_star_success(client, session):
@@ -132,10 +146,12 @@ async def test_update_star_success(client, session):
     refreshed = await session.get(StarModel, s.id)
     assert refreshed.name == "NewName"
 
+
 @pytest.mark.anyio
 async def test_delete_star_not_found(client):
     r = await client.delete("/stars/888")
     assert r.status_code == status.HTTP_404_NOT_FOUND
+
 
 @pytest.mark.anyio
 async def test_delete_star_success(client, session):

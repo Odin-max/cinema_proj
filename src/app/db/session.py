@@ -15,13 +15,13 @@ SQLALCHEMY_DATABASE_URL = (
 
 engine = create_async_engine(settings.database_url, echo=False)
 
-AsyncSessionLocal = sessionmaker(
-    engine, expire_on_commit=False, class_=AsyncSession
-)
+AsyncSessionLocal = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+
 
 async def get_db():
     async with AsyncSessionLocal() as session:
         yield session
+
 
 async def init_db():
     async with engine.begin() as conn:

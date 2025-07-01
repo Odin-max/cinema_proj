@@ -16,9 +16,11 @@ from app.models.movie_models import MovieModel, CertificationModel
 class DummyUser:
     id = 1
 
+
 @pytest.fixture
 def anyio_backend():
     return "asyncio"
+
 
 @pytest.fixture(scope="function")
 async def engine():
@@ -30,6 +32,7 @@ async def engine():
     yield engine
     await engine.dispose()
 
+
 @pytest.fixture(scope="function")
 async def session(engine):
     AsyncSessionLocal = sessionmaker(
@@ -37,6 +40,7 @@ async def session(engine):
     )
     async with AsyncSessionLocal() as session:
         yield session
+
 
 @pytest.fixture(scope="function")
 def app(session, monkeypatch):
@@ -48,6 +52,7 @@ def app(session, monkeypatch):
 
     return app
 
+
 @pytest.fixture(scope="function")
 async def client(app):
     async with AsyncClient(
@@ -55,15 +60,23 @@ async def client(app):
     ) as client:
         yield client
 
+
 @pytest.mark.anyio
 async def test_add_to_and_remove_from_cart(client, session):
     cert = CertificationModel(name="PG")
     session.add(cert)
     await session.commit()
     movie = MovieModel(
-        name="TestMovie", year=2022, time=100,
-        imdb=7.0, votes=100, meta_score=70, gross=500000,
-        description="desc", price=4.50, certification_id=cert.id
+        name="TestMovie",
+        year=2022,
+        time=100,
+        imdb=7.0,
+        votes=100,
+        meta_score=70,
+        gross=500000,
+        description="desc",
+        price=4.50,
+        certification_id=cert.id,
     )
     session.add(movie)
     await session.commit()
@@ -84,6 +97,7 @@ async def test_add_to_and_remove_from_cart(client, session):
     cart2 = r3.json()
     assert cart2["items"] == []
 
+
 @pytest.mark.anyio
 async def test_view_and_clear_cart(client):
     r = await client.get("/cart/")
@@ -94,15 +108,23 @@ async def test_view_and_clear_cart(client):
     assert r2.status_code == status.HTTP_200_OK
     assert r2.json()["items"] == []
 
+
 @pytest.mark.anyio
 async def test_checkout_and_order_webhook_and_success(client, session, monkeypatch):
     cert = CertificationModel(name="R")
     session.add(cert)
     await session.commit()
     movie = MovieModel(
-        name="CheckoutMovie", year=2021, time=90,
-        imdb=8.0, votes=150, meta_score=80, gross=300000,
-        description="d", price=5.00, certification_id=cert.id
+        name="CheckoutMovie",
+        year=2021,
+        time=90,
+        imdb=8.0,
+        votes=150,
+        meta_score=80,
+        gross=300000,
+        description="d",
+        price=5.00,
+        certification_id=cert.id,
     )
     session.add(movie)
     await session.commit()
@@ -111,21 +133,38 @@ async def test_checkout_and_order_webhook_and_success(client, session, monkeypat
 
     class DummySession:
         url = "https://checkout"
+
     monkeypatch.setattr(stripe.checkout.Session, "create", lambda **kw: DummySession())
 
     r = await client.post("/cart/checkout")
     assert r.status_code == status.HTTP_200_OK
     assert r.json()["checkout_url"] == "https://checkout"
 
-    dummy_event = type("E", (), {"type": "checkout.session.completed", "data": type("D", (), {"object": type("O", (), {"metadata": {"order_id": "1"}})})})
-    monkeypatch.setattr(stripe.Webhook, "construct_event", lambda payload, sig, secret: dummy_event)
+    dummy_event = type(
+        "E",
+        (),
+        {
+            "type": "checkout.session.completed",
+            "data": type(
+                "D", (), {"object": type("O", (), {"metadata": {"order_id": "1"}})}
+            ),
+        },
+    )
+    monkeypatch.setattr(
+        stripe.Webhook, "construct_event", lambda payload, sig, secret: dummy_event
+    )
 
-    r2 = await client.post("/cart/stripe/webhook", headers={"stripe-signature": "sig"}, content=b"payload")
+    r2 = await client.post(
+        "/cart/stripe/webhook", headers={"stripe-signature": "sig"}, content=b"payload"
+    )
     assert r2.status_code == status.HTTP_200_OK
 
     class DummyRetrieve:
         metadata = {"order_id": "1"}
-    monkeypatch.setattr(stripe.checkout.Session, "retrieve", lambda session_id: DummyRetrieve())
+
+    monkeypatch.setattr(
+        stripe.checkout.Session, "retrieve", lambda session_id: DummyRetrieve()
+    )
 
     r3 = await client.get("/cart/orders/success", params={"session_id": "sess_123"})
     assert r3.status_code == status.HTTP_200_OK

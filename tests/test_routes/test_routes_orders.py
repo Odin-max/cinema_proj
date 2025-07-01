@@ -13,10 +13,10 @@ from app.models.movie_models import MovieModel, CertificationModel
 from app.models.order_models import OrderModel, OrderStatus
 
 
-
 @pytest.fixture
 def anyio_backend():
     return "asyncio"
+
 
 @pytest.fixture(scope="function")
 async def engine():
@@ -28,6 +28,7 @@ async def engine():
     yield engine
     await engine.dispose()
 
+
 @pytest.fixture(scope="function")
 async def session(engine):
     AsyncSessionLocal = sessionmaker(
@@ -36,16 +37,20 @@ async def session(engine):
     async with AsyncSessionLocal() as session:
         yield session
 
+
 @pytest.fixture(scope="function")
 def app(session, monkeypatch):
     app = FastAPI()
     app.include_router(orders_router)
 
     app.dependency_overrides[get_db] = lambda: session
+
     class DummyUser:
         id = 1
+
     app.dependency_overrides[get_current_user] = lambda: DummyUser()
     return app
+
 
 @pytest.fixture(scope="function")
 async def client(app):
@@ -54,10 +59,12 @@ async def client(app):
     ) as client:
         yield client
 
+
 @pytest.mark.anyio
 async def test_place_order_empty_cart(client: AsyncClient, session: AsyncSession):
     r = await client.post("/orders/")
     assert r.status_code == status.HTTP_400_BAD_REQUEST
+
 
 @pytest.mark.anyio
 async def test_place_order_success(client, session):
@@ -101,6 +108,7 @@ async def test_place_order_success(client, session):
     assert item0["movie_id"] == movie.id
     assert float(item0["price_at_order"]) == 5.5
 
+
 @pytest.mark.anyio
 async def test_list_user_orders(client: AsyncClient, session: AsyncSession):
     o1 = OrderModel(user_id=1, total_amount=1.0, status=OrderStatus.pending)
@@ -113,17 +121,17 @@ async def test_list_user_orders(client: AsyncClient, session: AsyncSession):
     all_orders = r.json()
     assert isinstance(all_orders, list) and len(all_orders) == 2
 
-    r = await client.get(
-        "/orders/", params={"status": OrderStatus.pending.value}
-    )
+    r = await client.get("/orders/", params={"status": OrderStatus.pending.value})
     pendings = r.json()
     assert isinstance(pendings, list) and len(pendings) == 1
     assert pendings[0]["status"] == OrderStatus.pending.value
+
 
 @pytest.mark.anyio
 async def test_cancel_order_not_found(client: AsyncClient, session: AsyncSession):
     r = await client.post("/orders/orders/999/cancel")
     assert r.status_code == status.HTTP_404_NOT_FOUND
+
 
 @pytest.mark.anyio
 async def test_cancel_order_success(client: AsyncClient, session: AsyncSession):

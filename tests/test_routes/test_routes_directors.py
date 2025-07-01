@@ -15,6 +15,7 @@ from app.models.movie_models import DirectorModel
 def anyio_backend():
     return "asyncio"
 
+
 @pytest.fixture(scope="function")
 async def engine():
     engine = create_async_engine(
@@ -25,6 +26,7 @@ async def engine():
     yield engine
     await engine.dispose()
 
+
 @pytest.fixture(scope="function")
 async def session(engine):
     AsyncSessionLocal = sessionmaker(
@@ -32,6 +34,7 @@ async def session(engine):
     )
     async with AsyncSessionLocal() as session:
         yield session
+
 
 @pytest.fixture(scope="function")
 def app(session, monkeypatch):
@@ -43,6 +46,7 @@ def app(session, monkeypatch):
     app.dependency_overrides[get_current_moderator] = lambda: None
 
     return app
+
 
 @pytest.fixture(scope="function")
 async def client(app):
@@ -60,6 +64,7 @@ async def test_create_director_success(client: AsyncClient):
     assert isinstance(data["id"], int)
     assert data["name"] == "Spielberg"
 
+
 @pytest.mark.anyio
 async def test_create_director_duplicate(client: AsyncClient, session: AsyncSession):
     session.add(DirectorModel(name="Tarantino"))
@@ -68,6 +73,7 @@ async def test_create_director_duplicate(client: AsyncClient, session: AsyncSess
     r = await client.post("/directors/", json={"name": "Tarantino"})
     assert r.status_code == status.HTTP_400_BAD_REQUEST
     assert "already exists" in r.json()["detail"].lower()
+
 
 @pytest.mark.anyio
 async def test_list_and_get_directors(client: AsyncClient, session: AsyncSession):
@@ -91,6 +97,7 @@ async def test_list_and_get_directors(client: AsyncClient, session: AsyncSession
     assert r.status_code == status.HTTP_404_NOT_FOUND
     assert "not found" in r.json()["detail"].lower()
 
+
 @pytest.mark.anyio
 async def test_update_director(client: AsyncClient, session: AsyncSession):
     d = DirectorModel(name="OldName")
@@ -110,6 +117,7 @@ async def test_update_director(client: AsyncClient, session: AsyncSession):
 
     r = await client.put("/directors/999", json={"name": "X"})
     assert r.status_code == status.HTTP_404_NOT_FOUND
+
 
 @pytest.mark.anyio
 async def test_delete_director(client: AsyncClient, session: AsyncSession):

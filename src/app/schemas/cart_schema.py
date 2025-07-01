@@ -18,9 +18,7 @@ class CartItemRead(BaseModel):
     year: int
     added_at: datetime
 
-    model_config = {
-        "from_attributes": True
-    }
+    model_config = {"from_attributes": True}
 
 
 class CartRead(BaseModel):
@@ -28,6 +26,4 @@ class CartRead(BaseModel):
     user_id: int
     items: List[CartItemRead]
 
-    model_config = {
-        "from_attributes": True
-    }
+    model_config = {"from_attributes": True}

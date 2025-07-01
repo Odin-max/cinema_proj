@@ -29,6 +29,7 @@ from app.schemas.order_schema import OrderStatus
 def anyio_backend():
     return "asyncio"
 
+
 @pytest.fixture(scope="function")
 async def engine():
     engine = create_async_engine(
@@ -39,6 +40,7 @@ async def engine():
     yield engine
     await engine.dispose()
 
+
 @pytest.fixture(scope="function")
 async def session(engine):
     AsyncSessionLocal = sessionmaker(
@@ -46,6 +48,7 @@ async def session(engine):
     )
     async with AsyncSessionLocal() as session:
         yield session
+
 
 @pytest.fixture(scope="function")
 def app(session, monkeypatch):
@@ -56,6 +59,7 @@ def app(session, monkeypatch):
     app.dependency_overrides[get_current_moderator] = lambda: None
 
     return app
+
 
 @pytest.fixture(scope="function")
 async def client(app):
@@ -99,6 +103,7 @@ async def test_create_movie_success(client: AsyncClient, session: AsyncSession):
     assert set(body.get("stars", [])) == {"Alice", "Bob"}
     assert body.get("directors", []) == ["Carol"]
 
+
 @pytest.mark.anyio
 async def test_create_movie_bad_cert(client: AsyncClient):
     movie = MovieCreate(
@@ -118,33 +123,50 @@ async def test_create_movie_bad_cert(client: AsyncClient):
     assert r.status_code == status.HTTP_400_BAD_REQUEST
     assert "Certification not found" in r.text
 
+
 @pytest.mark.anyio
 async def test_create_movie_duplicate(client: AsyncClient, session: AsyncSession):
     cert = CertificationModel(name="R")
     session.add(cert)
     await session.commit()
     m = MovieModel(
-        name="Dup", year=2022, time=90, imdb=5.5, votes=100,
-        meta_score=50, gross=100000, description="", price=4.99,
-        certification_id=cert.id
+        name="Dup",
+        year=2022,
+        time=90,
+        imdb=5.5,
+        votes=100,
+        meta_score=50,
+        gross=100000,
+        description="",
+        price=4.99,
+        certification_id=cert.id,
     )
     session.add(m)
     await session.commit()
 
     movie = MovieCreate(
-        name="Dup", year=2022, time=90, imdb=5.5, votes=100,
-        meta_score=50, gross=100000, description="", price=4.99,
-        certification_id=cert.id
+        name="Dup",
+        year=2022,
+        time=90,
+        imdb=5.5,
+        votes=100,
+        meta_score=50,
+        gross=100000,
+        description="",
+        price=4.99,
+        certification_id=cert.id,
     )
     payload = jsonable_encoder(movie)
 
     with pytest.raises(IntegrityError):
         await client.post("/admin/create_movie", json=payload)
 
+
 @pytest.mark.anyio
 async def test_get_user_cart_not_found(client: AsyncClient):
     r = await client.get("/admin/users/123")
     assert r.status_code == status.HTTP_404_NOT_FOUND
+
 
 @pytest.mark.anyio
 async def test_get_user_cart_success(client: AsyncClient, session: AsyncSession):
@@ -152,9 +174,16 @@ async def test_get_user_cart_success(client: AsyncClient, session: AsyncSession)
     session.add(cart)
     await session.flush()
     m = MovieModel(
-        name="CartMovie", year=2021, time=90, imdb=8.0, votes=200,
-        meta_score=85, gross=200000, description="", price=3.5,
-        certification_id=1
+        name="CartMovie",
+        year=2021,
+        time=90,
+        imdb=8.0,
+        votes=200,
+        meta_score=85,
+        gross=200000,
+        description="",
+        price=3.5,
+        certification_id=1,
     )
     session.add(m)
     await session.flush()
@@ -170,6 +199,7 @@ async def test_get_user_cart_success(client: AsyncClient, session: AsyncSession)
     assert len(items) == 1
     item = items[0]
     assert item.get("movie_id") == m.id
+
 
 @pytest.mark.anyio
 async def test_list_orders_and_filters(client: AsyncClient, session: AsyncSession):
@@ -188,4 +218,3 @@ async def test_list_orders_and_filters(client: AsyncClient, session: AsyncSessio
     data = r.json()
     assert len(data) == 1
     assert data[0]["id"] == o1.id
-

@@ -24,7 +24,7 @@ database_url = os.getenv("DATABASE_URL")
 if not database_url:
     raise RuntimeError("DATABASE_URL environment variable is not set")
 # Alembic потребує синхронного драйвера, тож міняємо +asyncpg на стандартний
-sync_url = database_url.replace('+asyncpg', '')
+sync_url = database_url.replace("+asyncpg", "")
 config.set_main_option("sqlalchemy.url", sync_url)
 
 # Налаштовуємо логування
@@ -33,6 +33,7 @@ if config.config_file_name:
 
 # Мета-дані для автогенерації
 target_metadata = Base.metadata
+
 
 def run_migrations_offline() -> None:
     url = config.get_main_option("sqlalchemy.url")
@@ -59,6 +60,7 @@ def run_migrations_online() -> None:
         )
         with context.begin_transaction():
             context.run_migrations()
+
 
 if context.is_offline_mode():
     run_migrations_offline()

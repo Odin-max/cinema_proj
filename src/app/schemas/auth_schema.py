@@ -47,4 +47,3 @@ class PasswordResetRequestSchema(BaseModel):
 class PasswordResetSchema(BaseModel):
     token: str
     new_password: constr(min_length=8)
-

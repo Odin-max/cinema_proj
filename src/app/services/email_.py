@@ -2,13 +2,16 @@ import smtplib
 from email.message import EmailMessage
 from app.core.config import settings
 
+
 async def send_activation_email(to_email: str, token: str) -> None:
     link = f"{settings.BACKEND_URL}/auth/activate?token={token}"
     msg = EmailMessage()
     msg["Subject"] = "Activate your account"
     msg["From"] = settings.EMAIL_HOST_USER
     msg["To"] = to_email
-    msg.set_content(f"Welcome! Click here to activate your account:\n\n{link}\n\n(This link expires in 24h.)")
+    msg.set_content(
+        f"Welcome! Click here to activate your account:\n\n{link}\n\n(This link expires in 24h.)"
+    )
 
     with smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT) as smtp:
         if settings.EMAIL_USE_TLS:

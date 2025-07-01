@@ -16,11 +16,14 @@ from app.schemas.auth_schema import TokenPayload
 pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
+
 def hash_password(password: str) -> str:
     return pwd_ctx.hash(password)
 
+
 def verify_password(plain: str, hashed: str) -> bool:
     return pwd_ctx.verify(plain, hashed)
+
 
 async def get_current_user(
     authorization: str = Depends(oauth2_scheme),
@@ -58,8 +61,9 @@ async def get_current_user(
         )
     return user
 
+
 async def get_current_moderator(
-    current_user = Depends(get_current_user),
+    current_user=Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -73,6 +77,7 @@ async def get_current_moderator(
             detail="You do not have the required permissions",
         )
     return current_user
+
 
 async def get_current_admin(
     current_user=Depends(get_current_user),
@@ -89,17 +94,26 @@ async def get_current_admin(
         )
     return current_user
 
+
 def create_access_token(
     subject: str,
     expires_delta: timedelta | None = None,
 ) -> str:
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
+    expire = datetime.utcnow() + (
+        expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
     to_encode = {"sub": subject, "exp": expire}
-    return jwt.encode(to_encode, settings.SECRET_KEY_ACCESS, algorithm=settings.JWT_SIGNING_ALGORITHM)
+    return jwt.encode(
+        to_encode, settings.SECRET_KEY_ACCESS, algorithm=settings.JWT_SIGNING_ALGORITHM
+    )
+
 
 def create_refresh_token(user_id: int) -> str:
     expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode = {"sub": str(user_id), "exp": expire}
-    return jwt.encode(to_encode, settings.SECRET_KEY_REFRESH, algorithm=settings.JWT_SIGNING_ALGORITHM)
+    return jwt.encode(
+        to_encode, settings.SECRET_KEY_REFRESH, algorithm=settings.JWT_SIGNING_ALGORITHM
+    )
+
 
 get_password_hash = hash_password

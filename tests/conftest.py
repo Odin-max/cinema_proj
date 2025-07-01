@@ -14,6 +14,7 @@ from app.db.base import Base
 from app.models.user_models import UserGroup
 from app.db.session import get_db
 
+
 @pytest.fixture(scope="session")
 def app() -> FastAPI:
     return fastapi_app
@@ -29,6 +30,7 @@ async def async_engine():
 
     def _enable_sqlite_fk(dbapi_conn, conn_record):
         dbapi_conn.execute("PRAGMA foreign_keys=ON")
+
     event.listen(engine.sync_engine, "connect", _enable_sqlite_fk)
 
     async with engine.begin() as conn:
@@ -47,7 +49,7 @@ async def async_engine():
 async def session(async_engine):
 
     conn = await async_engine.connect()
-    await conn.begin() 
+    await conn.begin()
     await conn.begin_nested()
 
     @event.listens_for(Session, "after_transaction_end")
@@ -69,11 +71,13 @@ async def session(async_engine):
 async def client(app: FastAPI, session: AsyncSession):
     async def _override_get_db():
         yield session
+
     app.dependency_overrides[get_db] = _override_get_db
     transport = ASGITransport(app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
     app.dependency_overrides.pop(get_db, None)
+
 
 @pytest_asyncio.fixture(scope="session")
 def event_loop():

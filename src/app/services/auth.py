@@ -56,7 +56,9 @@ async def register(
 ):
     exists = await db.scalar(select(User).where(User.email == data.email))
     if exists:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Email already registered")
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, detail="Email already registered"
+        )
 
     user = User(
         email=data.email,
@@ -113,9 +115,11 @@ async def activate(
 
     return {"message": "Account activated successfully."}
 
+
 @router.get("/me", response_model=UserRead, status_code=status.HTTP_200_OK)
 async def read_current_user(current_user=Depends(get_current_user)):
     return current_user
+
 
 @router.post("/resend-activation", status_code=status.HTTP_200_OK)
 async def resend_activation(
@@ -126,8 +130,7 @@ async def resend_activation(
     user = await db.scalar(select(User).where(User.email == data.email))
     if not user or user.is_active:
         raise HTTPException(
-            status.HTTP_400_BAD_REQUEST,
-            detail="User not found or already active"
+            status.HTTP_400_BAD_REQUEST, detail="User not found or already active"
         )
 
     result = await db.execute(
@@ -137,7 +140,7 @@ async def resend_activation(
 
     for tok in old_tokens:
         await db.delete(tok)
-    
+
     await db.flush()
 
     new_token = str(uuid.uuid4())
@@ -153,6 +156,7 @@ async def resend_activation(
     background_tasks.add_task(send_activation_email, user.email, new_token)
 
     return {"message": "A new activation email has been sent."}
+
 
 @router.post("/login", response_model=TokenSchema)
 async def login(
@@ -179,7 +183,7 @@ async def login(
     await db.commit()
 
     response.set_cookie(
-        key="access_token", 
+        key="access_token",
         value=access_token,
         httponly=True,
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
@@ -188,9 +192,9 @@ async def login(
     )
 
     return {
-        "access_token":  access_token,
+        "access_token": access_token,
         "refresh_token": refresh_token_str,
-        "token_type":    "bearer",
+        "token_type": "bearer",
     }
 
 
@@ -199,9 +203,13 @@ async def refresh_token(
     data: TokenRefreshSchema,
     db: AsyncSession = Depends(get_db),
 ):
-    rt = await db.scalar(select(RefreshToken).where(RefreshToken.token == data.refresh_token))
+    rt = await db.scalar(
+        select(RefreshToken).where(RefreshToken.token == data.refresh_token)
+    )
     if not rt or rt.expires_at < datetime.utcnow():
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired refresh token")
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired refresh token"
+        )
 
     access_token = create_access_token(subject=str(rt.user_id))
     return {
@@ -213,7 +221,9 @@ async def refresh_token(
 
 @router.post("/logout", status_code=status.HTTP_200_OK)
 async def logout(data: TokenRefreshSchema, db: AsyncSession = Depends(get_db)):
-    rt = await db.scalar(select(RefreshToken).where(RefreshToken.token == data.refresh_token))
+    rt = await db.scalar(
+        select(RefreshToken).where(RefreshToken.token == data.refresh_token)
+    )
     if rt:
         await db.delete(rt)
         await db.commit()
@@ -228,9 +238,13 @@ async def forgot_password(
 ):
     user = await db.scalar(select(User).where(User.email == data.email))
     if not user or not user.is_active:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="User not found or not active")
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, detail="User not found or not active"
+        )
 
-    await db.execute(delete(PasswordResetToken).where(PasswordResetToken.user_id == user.id))
+    await db.execute(
+        delete(PasswordResetToken).where(PasswordResetToken.user_id == user.id)
+    )
     token_str = str(uuid.uuid4())
     reset = PasswordResetToken(
         user_id=user.id,
@@ -245,8 +259,12 @@ async def forgot_password(
 
 
 @router.get("/password/reset", response_class=HTMLResponse)
-async def password_reset_form(request: Request, token: str, db: AsyncSession = Depends(get_db)):
-    db_token = await db.scalar(select(PasswordResetToken).where(PasswordResetToken.token == token))
+async def password_reset_form(
+    request: Request, token: str, db: AsyncSession = Depends(get_db)
+):
+    db_token = await db.scalar(
+        select(PasswordResetToken).where(PasswordResetToken.token == token)
+    )
     if not db_token or db_token.expires_at < datetime.utcnow():
         raise HTTPException(400, "Invalid or expired token")
     html = f"""
@@ -266,9 +284,7 @@ async def password_reset_form(request: Request, token: str, db: AsyncSession = D
 
 
 @router.post(
-    "/password/reset",
-    status_code=status.HTTP_200_OK,
-    response_class=JSONResponse
+    "/password/reset", status_code=status.HTTP_200_OK, response_class=JSONResponse
 )
 async def password_reset_submit(
     token: str = Form(...),
@@ -282,12 +298,16 @@ async def password_reset_submit(
     )
     db_token = result.scalar_one_or_none()
     if not db_token or db_token.expires_at < datetime.utcnow():
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Invalid or expired token")
-    
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, detail="Invalid or expired token"
+        )
+
     user = db_token.user
     user.hashed_password = hash_password(new_password)
 
-    await db.execute(delete(PasswordResetToken).where(PasswordResetToken.id == db_token.id))
+    await db.execute(
+        delete(PasswordResetToken).where(PasswordResetToken.id == db_token.id)
+    )
     await db.commit()
 
     return {"message": "Password has been reset successfully."}

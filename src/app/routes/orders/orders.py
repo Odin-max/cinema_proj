@@ -14,6 +14,7 @@ from app.core.security import get_current_user
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 
+
 @router.post("/", response_model=OrderRead, status_code=status.HTTP_201_CREATED)
 async def place_order(
     current_user=Depends(get_current_user),
@@ -55,25 +56,18 @@ async def place_order(
 
     return order_with_items
 
-@router.get(
-    "/",
-    response_model=List[OrderRead],
-    status_code=status.HTTP_200_OK
-)
+
+@router.get("/", response_model=List[OrderRead], status_code=status.HTTP_200_OK)
 async def list_user_orders(
     status: Optional[OrderStatus] = Query(
-        None,
-        description="Filter by order status (`pending`, `paid`, `canceled`)"
+        None, description="Filter by order status (`pending`, `paid`, `canceled`)"
     ),
     current_user=Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     stmt = (
         select(OrderModel)
-        .options(
-            selectinload(OrderModel.items)
-            .selectinload(OrderItemModel.movie)
-        )
+        .options(selectinload(OrderModel.items).selectinload(OrderItemModel.movie))
         .where(OrderModel.user_id == current_user.id)
     )
 
@@ -86,6 +80,7 @@ async def list_user_orders(
     orders = result.scalars().all()
     return orders
 
+
 @router.post("/orders/{order_id}/cancel", response_model=OrderRead)
 async def cancel_order(
     order_id: int,
@@ -93,8 +88,9 @@ async def cancel_order(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(OrderModel)
-        .where(OrderModel.id == order_id, OrderModel.user_id == current_user.id)
+        select(OrderModel).where(
+            OrderModel.id == order_id, OrderModel.user_id == current_user.id
+        )
     )
     order = result.scalar_one_or_none()
     if not order:

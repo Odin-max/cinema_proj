@@ -10,9 +10,11 @@ from app.db.session import get_db
 from app.core.security import get_current_user, get_current_moderator
 from app.models.movie_models import GenreModel
 
+
 @pytest.fixture
 def anyio_backend():
     return "asyncio"
+
 
 @pytest.fixture(scope="function")
 async def engine():
@@ -24,6 +26,7 @@ async def engine():
     yield engine
     await engine.dispose()
 
+
 @pytest.fixture(scope="function")
 async def session(engine):
     AsyncSessionLocal = sessionmaker(
@@ -31,6 +34,7 @@ async def session(engine):
     )
     async with AsyncSessionLocal() as session:
         yield session
+
 
 @pytest.fixture(scope="function")
 def app(session, monkeypatch):
@@ -42,6 +46,7 @@ def app(session, monkeypatch):
     app.dependency_overrides[get_current_moderator] = lambda: None
 
     return app
+
 
 @pytest.fixture(scope="function")
 async def client(app):
@@ -59,6 +64,7 @@ async def test_create_genre_success(client: AsyncClient):
     assert isinstance(data["id"], int)
     assert data["name"] == "Action"
 
+
 @pytest.mark.anyio
 async def test_create_genre_duplicate(client: AsyncClient, session: AsyncSession):
     session.add(GenreModel(name="Horror"))
@@ -67,6 +73,7 @@ async def test_create_genre_duplicate(client: AsyncClient, session: AsyncSession
     r = await client.post("/genres/", json={"name": "Horror"})
     assert r.status_code == status.HTTP_400_BAD_REQUEST
     assert "already exists" in r.json()["detail"].lower()
+
 
 @pytest.mark.anyio
 async def test_list_and_get_genre(client: AsyncClient, session: AsyncSession):
@@ -90,6 +97,7 @@ async def test_list_and_get_genre(client: AsyncClient, session: AsyncSession):
     assert r.status_code == status.HTTP_404_NOT_FOUND
     assert "not found" in r.json()["detail"].lower()
 
+
 @pytest.mark.anyio
 async def test_update_genre(client: AsyncClient, session: AsyncSession):
     g = GenreModel(name="Thriller")
@@ -109,6 +117,7 @@ async def test_update_genre(client: AsyncClient, session: AsyncSession):
 
     r = await client.put("/genres/999", json={"name": "X"})
     assert r.status_code == status.HTTP_404_NOT_FOUND
+
 
 @pytest.mark.anyio
 async def test_delete_genre(client: AsyncClient, session: AsyncSession):

@@ -13,6 +13,7 @@ class MovieListItem(BaseModel):
     imdb: float
     price: float
 
+
 class MovieCreate(BaseModel):
     name: str
     year: int
@@ -45,9 +46,9 @@ class MovieRead(BaseModel):
     genres: List[str]
     stars: List[str]
     directors: List[str]
-    
+
     model_config = ConfigDict(from_attributes=True)
-    
+
 
 class MovieDetail(MovieListItem):
     time: int
@@ -86,6 +87,7 @@ class LikeAction(BaseModel):
 class RatingCreate(BaseModel):
     score: int  # 1–10
 
+
 class GenreCount(BaseModel):
     id: int
     name: str
@@ -100,5 +102,6 @@ class NotificationRead(BaseModel):
 
     class Config:
         orm_mode = True
+
 
 CommentRead.update_forward_refs()

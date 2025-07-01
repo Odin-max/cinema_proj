@@ -5,10 +5,12 @@ from enum import Enum
 from pydantic import BaseModel, ConfigDict
 from typing import List
 
+
 class OrderStatus(str, Enum):
     pending = "pending"
     paid = "paid"
     canceled = "canceled"
+
 
 class OrderItemRead(BaseModel):
     id: int
@@ -16,6 +18,7 @@ class OrderItemRead(BaseModel):
     price_at_order: float
 
     model_config = ConfigDict(from_attributes=True)
+
 
 class OrderRead(BaseModel):
     id: int

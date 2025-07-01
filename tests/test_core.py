@@ -93,7 +93,9 @@ async def test_get_current_user_happy_path(client: AsyncClient, session: AsyncSe
     await session.commit()
     await session.refresh(usr)
 
-    token = security.create_access_token(str(usr.id), expires_delta=timedelta(minutes=5))
+    token = security.create_access_token(
+        str(usr.id), expires_delta=timedelta(minutes=5)
+    )
     r = await client.get("/me", headers={"Authorization": f"Bearer {token}"})
     assert r.status_code == 200
     assert r.json() == {"id": usr.id, "email": usr.email}
@@ -112,8 +114,8 @@ async def test_get_current_moderator_and_admin(
     app: FastAPI,
 ):
     modg = UserGroup(name="moderator")
-    adg  = UserGroup(name="admin")
-    ug   = UserGroup(name="user")
+    adg = UserGroup(name="admin")
+    ug = UserGroup(name="user")
     session.add_all([modg, adg, ug])
     await session.commit()
 
@@ -137,23 +139,35 @@ async def test_get_current_moderator_and_admin(
         await session.refresh(u)
         return u
 
-    u_mod   = await make_user(modg)
+    u_mod = await make_user(modg)
     u_admin = await make_user(adg)
-    u_user  = await make_user(ug)
+    u_user = await make_user(ug)
 
     def bearer(u: User) -> str:
         return security.create_access_token(str(u.id))
 
-    r1 = await client.get("/mod-only", headers={"Authorization": f"Bearer {bearer(u_mod)}"})
-    r2 = await client.get("/mod-only", headers={"Authorization": f"Bearer {bearer(u_admin)}"})
-    r3 = await client.get("/mod-only", headers={"Authorization": f"Bearer {bearer(u_user)}"})
+    r1 = await client.get(
+        "/mod-only", headers={"Authorization": f"Bearer {bearer(u_mod)}"}
+    )
+    r2 = await client.get(
+        "/mod-only", headers={"Authorization": f"Bearer {bearer(u_admin)}"}
+    )
+    r3 = await client.get(
+        "/mod-only", headers={"Authorization": f"Bearer {bearer(u_user)}"}
+    )
     assert r1.status_code == 200
     assert r2.status_code == 200
     assert r3.status_code == status.HTTP_403_FORBIDDEN
 
-    a1 = await client.get("/admin-only", headers={"Authorization": f"Bearer {bearer(u_admin)}"})
-    a2 = await client.get("/admin-only", headers={"Authorization": f"Bearer {bearer(u_mod)}"})
-    a3 = await client.get("/admin-only", headers={"Authorization": f"Bearer {bearer(u_user)}"})
+    a1 = await client.get(
+        "/admin-only", headers={"Authorization": f"Bearer {bearer(u_admin)}"}
+    )
+    a2 = await client.get(
+        "/admin-only", headers={"Authorization": f"Bearer {bearer(u_mod)}"}
+    )
+    a3 = await client.get(
+        "/admin-only", headers={"Authorization": f"Bearer {bearer(u_user)}"}
+    )
     assert a1.status_code == 200
     assert a2.status_code == status.HTTP_403_FORBIDDEN
     assert a3.status_code == status.HTTP_403_FORBIDDEN

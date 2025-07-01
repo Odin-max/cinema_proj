@@ -11,7 +11,7 @@ from sqlalchemy import select
 from app.db.base import Base
 from app.services import auth as auth_router
 from app.core import security as auth_service
-from app.core.config import settings 
+from app.core.config import settings
 from app.models.user_models import (
     User,
     ActivationToken,
@@ -19,15 +19,20 @@ from app.models.user_models import (
     PasswordResetToken,
 )
 
+
 @pytest.fixture
 def anyio_backend():
     return "asyncio"
 
+
 @pytest.fixture(scope="function")
 async def async_engine():
-    engine = create_async_engine("sqlite+aiosqlite:///:memory:", future=True, echo=False)
+    engine = create_async_engine(
+        "sqlite+aiosqlite:///:memory:", future=True, echo=False
+    )
     yield engine
     await engine.dispose()
+
 
 @pytest.fixture(scope="function")
 async def session(async_engine):
@@ -40,6 +45,7 @@ async def session(async_engine):
         yield session
         await session.close()
 
+
 @pytest.fixture(scope="function")
 def app(session, monkeypatch):
     app = FastAPI()
@@ -48,9 +54,12 @@ def app(session, monkeypatch):
     app.dependency_overrides[auth_router.get_db] = lambda: session
 
     monkeypatch.setattr(auth_router, "send_activation_email", lambda email, token: None)
-    monkeypatch.setattr(auth_router, "send_password_reset_email", lambda email, token: None)
+    monkeypatch.setattr(
+        auth_router, "send_password_reset_email", lambda email, token: None
+    )
 
     return app
+
 
 @pytest.fixture(scope="function")
 async def client(app):
@@ -59,11 +68,13 @@ async def client(app):
     ) as client:
         yield client
 
+
 @pytest.mark.anyio
-async def test_register_activate_login_refresh_logout(client: AsyncClient, session: AsyncSession):
+async def test_register_activate_login_refresh_logout(
+    client: AsyncClient, session: AsyncSession
+):
     resp = await client.post(
-        "/auth/register",
-        json={"email": "foo@example.com", "password": "secret123"}
+        "/auth/register", json={"email": "foo@example.com", "password": "secret123"}
     )
     assert resp.status_code == status.HTTP_201_CREATED
 
@@ -80,8 +91,7 @@ async def test_register_activate_login_refresh_logout(client: AsyncClient, sessi
     assert "activated" in resp.json()["message"].lower()
 
     resp = await client.post(
-        "/auth/login",
-        data={"username": "foo@example.com", "password": "secret123"}
+        "/auth/login", data={"username": "foo@example.com", "password": "secret123"}
     )
     assert resp.status_code == 200
     body = resp.json()
@@ -97,11 +107,12 @@ async def test_register_activate_login_refresh_logout(client: AsyncClient, sessi
     resp = await client.post("/auth/logout", json={"refresh_token": rt})
     assert resp.status_code == 200
     remaining = (
-        await session.execute(
-            select(RefreshToken).where(RefreshToken.token == rt)
-        )
-    ).scalars().all()
+        (await session.execute(select(RefreshToken).where(RefreshToken.token == rt)))
+        .scalars()
+        .all()
+    )
     assert remaining == []
+
 
 @pytest.mark.anyio
 async def test_resend_activation(client: AsyncClient, session: AsyncSession):
@@ -123,17 +134,21 @@ async def test_resend_activation(client: AsyncClient, session: AsyncSession):
     await session.commit()
 
     resp = await client.post(
-        "/auth/resend-activation",
-        json={"email": "bar@example.com"}
+        "/auth/resend-activation", json={"email": "bar@example.com"}
     )
     assert resp.status_code == 200
     tokens = (
-        await session.execute(
-            select(ActivationToken).where(ActivationToken.user_id == user.id)
+        (
+            await session.execute(
+                select(ActivationToken).where(ActivationToken.user_id == user.id)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     assert len(tokens) == 1
     assert tokens[0].token != old.token
+
 
 @pytest.mark.anyio
 async def test_forgot_and_reset_password(client: AsyncClient, session: AsyncSession):
@@ -161,8 +176,7 @@ async def test_forgot_and_reset_password(client: AsyncClient, session: AsyncSess
     assert "<form" in resp.text
 
     resp = await client.post(
-        "/auth/password/reset",
-        data={"token": token, "new_password": "newsecret"}
+        "/auth/password/reset", data={"token": token, "new_password": "newsecret"}
     )
     assert resp.status_code == status.HTTP_200_OK
 
@@ -191,9 +205,7 @@ async def test_activate_via_post(client: AsyncClient, session: AsyncSession):
     resp = await client.post("/auth/activate", json={"token": tok})
     assert resp.status_code == status.HTTP_200_OK
     assert "activated" in resp.json()["message"].lower()
-    remaining = (
-        await session.execute(select(ActivationToken))
-    ).scalars().all()
+    remaining = (await session.execute(select(ActivationToken))).scalars().all()
     assert remaining == []
 
     db_user = await session.get(User, user.id)
@@ -210,7 +222,9 @@ async def test_read_me(client: AsyncClient, session: AsyncSession):
     )
     session.add(user)
     await session.flush()
-    access = auth_router.create_access_token(subject=str(user.id), expires_delta=timedelta(minutes=5))
+    access = auth_router.create_access_token(
+        subject=str(user.id), expires_delta=timedelta(minutes=5)
+    )
     r = await client.get("/auth/me")
     assert r.status_code == status.HTTP_401_UNAUTHORIZED
 
@@ -234,7 +248,9 @@ async def test_login_errors(client: AsyncClient, session: AsyncSession):
     )
     session.add(user)
     await session.commit()
-    r = await client.post("/auth/login", data={"username": "in@e.com", "password": "pw"})
+    r = await client.post(
+        "/auth/login", data={"username": "in@e.com", "password": "pw"}
+    )
     assert r.status_code == status.HTTP_400_BAD_REQUEST
 
 
@@ -269,20 +285,20 @@ async def test_forgot_clears_old_tokens(client: AsyncClient, session: AsyncSessi
     session.add(old)
     await session.commit()
 
-    r = await client.post(
-        "/auth/forgot-password", json={"email": "fz@e.com"}
-    )
+    r = await client.post("/auth/forgot-password", json={"email": "fz@e.com"})
     assert r.status_code == status.HTTP_200_OK
-    all_tokens = (
-        await session.execute(select(PasswordResetToken))
-    ).scalars().all()
+    all_tokens = (await session.execute(select(PasswordResetToken))).scalars().all()
     assert len(all_tokens) == 1
     assert all_tokens[0].token != old.token
 
 
 @pytest.mark.anyio
-async def test_password_reset_submit_invalid(client: AsyncClient, session: AsyncSession):
-    r = await client.post("/auth/password/reset", data={"token": "bad", "new_password": "x"})
+async def test_password_reset_submit_invalid(
+    client: AsyncClient, session: AsyncSession
+):
+    r = await client.post(
+        "/auth/password/reset", data={"token": "bad", "new_password": "x"}
+    )
     assert r.status_code == status.HTTP_400_BAD_REQUEST
 
     user = User(
@@ -293,17 +309,27 @@ async def test_password_reset_submit_invalid(client: AsyncClient, session: Async
     )
     session.add(user)
     await session.commit()
-    exp = PasswordResetToken(user_id=user.id, token=str(uuid.uuid4()), expires_at=datetime.utcnow()-timedelta(hours=1))
+    exp = PasswordResetToken(
+        user_id=user.id,
+        token=str(uuid.uuid4()),
+        expires_at=datetime.utcnow() - timedelta(hours=1),
+    )
     session.add(exp)
     await session.commit()
-    r = await client.post("/auth/password/reset", data={"token": exp.token, "new_password": "xyz"})
+    r = await client.post(
+        "/auth/password/reset", data={"token": exp.token, "new_password": "xyz"}
+    )
     assert r.status_code == status.HTTP_400_BAD_REQUEST
 
 
 @pytest.mark.anyio
 async def test_error_cases(client: AsyncClient):
-    await client.post("/auth/register", json={"email": "dup@e.com", "password": "secret123"})
-    r = await client.post("/auth/register", json={"email": "dup@e.com", "password": "secret123"})
+    await client.post(
+        "/auth/register", json={"email": "dup@e.com", "password": "secret123"}
+    )
+    r = await client.post(
+        "/auth/register", json={"email": "dup@e.com", "password": "secret123"}
+    )
     assert r.status_code == status.HTTP_400_BAD_REQUEST
 
     r = await client.get("/auth/activate")
@@ -324,7 +350,6 @@ async def test_error_cases(client: AsyncClient):
     r = await client.get("/auth/password/reset?token=bad")
     assert r.status_code == status.HTTP_400_BAD_REQUEST
     r = await client.post(
-        "/auth/password/reset",
-        data={"token": "bad", "new_password": "x"}
+        "/auth/password/reset", data={"token": "bad", "new_password": "x"}
     )
     assert r.status_code == status.HTTP_400_BAD_REQUEST

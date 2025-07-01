@@ -16,6 +16,7 @@ from .routes.orders.orders import router as order_router
 
 app = FastAPI(title="Cinema Auth")
 
+
 @app.on_event("startup")
 async def on_startup():
     await init_db()

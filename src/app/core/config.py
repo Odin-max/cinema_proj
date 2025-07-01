@@ -1,10 +1,11 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 from pathlib import Path
-from pydantic import PostgresDsn, Field 
+from pydantic import PostgresDsn, Field
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
+
 
 class Settings(BaseSettings):
     POSTGRES_DB: str
@@ -27,15 +28,13 @@ class Settings(BaseSettings):
     EMAIL_USE_TLS: bool
 
     CELERY_BROKER_URL: str
-    CELERY_RESULT_BACKEND: Optional[str] = None 
+    CELERY_RESULT_BACKEND: Optional[str] = None
 
     DEFAULT_GROUP_ID: int = 1
     BACKEND_URL: str
 
     model_config = SettingsConfigDict(
-        env_file=(BASE_DIR / ".env"),
-        env_file_encoding="utf-8",
-        extra="ignore"
+        env_file=(BASE_DIR / ".env"), env_file_encoding="utf-8", extra="ignore"
     )
 
     @property
@@ -46,5 +45,6 @@ class Settings(BaseSettings):
             f"{self.POSTGRES_HOST}:{self.POSTGRES_DB_PORT}/"
             f"{self.POSTGRES_DB}"
         )
+
 
 settings = Settings()

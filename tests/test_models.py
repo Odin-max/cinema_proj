@@ -5,20 +5,35 @@ from sqlalchemy.orm import selectinload
 from datetime import datetime, timedelta
 from app.models.user_models import User
 from app.models.movie_models import (
-    CertificationModel, GenreModel, StarModel, DirectorModel, MovieModel,
-    CommentModel, CommentLikeModel, MovieLikeModel,
-    FavoriteModel, RatingModel, NotificationModel, PurchaseModel
+    CertificationModel,
+    GenreModel,
+    StarModel,
+    DirectorModel,
+    MovieModel,
+    CommentModel,
+    CommentLikeModel,
+    MovieLikeModel,
+    FavoriteModel,
+    RatingModel,
+    NotificationModel,
+    PurchaseModel,
 )
 from app.models.cart_models import CartModel, CartItemModel
 from app.models.order_models import OrderModel, OrderItemModel, OrderStatus
 from app.models.user_models import (
-    UserGroup, User,
-    ActivationToken, PasswordResetToken, RefreshToken
+    UserGroup,
+    User,
+    ActivationToken,
+    PasswordResetToken,
+    RefreshToken,
 )
+
 
 @pytest.mark.asyncio
 async def test_cart_creation_and_relationships(session):
-    user = User(email="u1@example.com", hashed_password="hash", is_active=True, group_id=1)
+    user = User(
+        email="u1@example.com", hashed_password="hash", is_active=True, group_id=1
+    )
     cert = CertificationModel(name="PG-13")
     movie = MovieModel(
         name="Test Movie",
@@ -30,7 +45,7 @@ async def test_cart_creation_and_relationships(session):
         gross=1.0,
         description="desc",
         price=9.99,
-        certification=cert
+        certification=cert,
     )
     session.add_all([user, cert, movie])
     await session.commit()
@@ -41,8 +56,8 @@ async def test_cart_creation_and_relationships(session):
 
     result = await session.execute(
         select(CartModel)
-          .options(selectinload(CartModel.items))
-          .where(CartModel.id == cart.id)
+        .options(selectinload(CartModel.items))
+        .where(CartModel.id == cart.id)
     )
     cart = result.scalar_one()
 
@@ -61,12 +76,21 @@ async def test_cart_creation_and_relationships(session):
 
 @pytest.mark.asyncio
 async def test_unique_cart_movie_constraint(session):
-    user = User(email="u2@example.com", hashed_password="hash", is_active=True, group_id=1)
+    user = User(
+        email="u2@example.com", hashed_password="hash", is_active=True, group_id=1
+    )
     cert = CertificationModel(name="R")
     movie = MovieModel(
-        name="Another Movie", year=2021, time=90, imdb=8.0,
-        votes=500, meta_score=75, gross=2.0, description="desc",
-        price=12.5, certification=cert
+        name="Another Movie",
+        year=2021,
+        time=90,
+        imdb=8.0,
+        votes=500,
+        meta_score=75,
+        gross=2.0,
+        description="desc",
+        price=12.5,
+        certification=cert,
     )
     session.add_all([user, cert, movie])
     await session.commit()
@@ -87,10 +111,34 @@ async def test_unique_cart_movie_constraint(session):
 
 @pytest.mark.asyncio
 async def test_cascade_delete_cart_items(session):
-    user = User(email="u3@example.com", hashed_password="hash", is_active=True, group_id=1)
+    user = User(
+        email="u3@example.com", hashed_password="hash", is_active=True, group_id=1
+    )
     cert = CertificationModel(name="G")
-    movie1 = MovieModel(name="M1", year=2020, time=80, imdb=7.0, votes=100, meta_score=60, gross=0.5, description="d", price=5.0, certification=cert)
-    movie2 = MovieModel(name="M2", year=2019, time=85, imdb=6.5, votes=80, meta_score=55, gross=0.3, description="d", price=6.0, certification=cert)
+    movie1 = MovieModel(
+        name="M1",
+        year=2020,
+        time=80,
+        imdb=7.0,
+        votes=100,
+        meta_score=60,
+        gross=0.5,
+        description="d",
+        price=5.0,
+        certification=cert,
+    )
+    movie2 = MovieModel(
+        name="M2",
+        year=2019,
+        time=85,
+        imdb=6.5,
+        votes=80,
+        meta_score=55,
+        gross=0.3,
+        description="d",
+        price=6.0,
+        certification=cert,
+    )
     session.add_all([user, cert, movie1, movie2])
     await session.commit()
 
@@ -109,9 +157,7 @@ async def test_cascade_delete_cart_items(session):
     result = await session.execute(select(CartItemModel))
     assert result.scalars().all() == []
 
-    result = await session.execute(
-        select(CartModel).where(CartModel.id == cart.id)
-    )
+    result = await session.execute(select(CartModel).where(CartModel.id == cart.id))
     assert result.scalar_one_or_none() is None
 
 
@@ -119,14 +165,28 @@ async def test_cascade_delete_cart_items(session):
 async def test_certification_and_movie_relationships(session):
     cert = CertificationModel(name="PG-13")
     m1 = MovieModel(
-        name="A", year=2000, time=100, imdb=7.0, votes=100,
-        meta_score=50, gross=1.0, description="d", price=5.0,
-        certification=cert
+        name="A",
+        year=2000,
+        time=100,
+        imdb=7.0,
+        votes=100,
+        meta_score=50,
+        gross=1.0,
+        description="d",
+        price=5.0,
+        certification=cert,
     )
     m2 = MovieModel(
-        name="B", year=2001, time=110, imdb=6.5, votes=200,
-        meta_score=60, gross=2.0, description="d2", price=6.0,
-        certification=cert
+        name="B",
+        year=2001,
+        time=110,
+        imdb=6.5,
+        votes=200,
+        meta_score=60,
+        gross=2.0,
+        description="d2",
+        price=6.0,
+        certification=cert,
     )
     session.add_all([cert, m1, m2])
     await session.commit()
@@ -155,9 +215,16 @@ async def test_genre_star_director_many_to_many(session):
     s = StarModel(name="Star One")
     d = DirectorModel(name="Dir One")
     m = MovieModel(
-        name="X", year=2022, time=120, imdb=8.0, votes=300,
-        meta_score=70, gross=3.0, description="desc", price=7.5,
-        certification=cert
+        name="X",
+        year=2022,
+        time=120,
+        imdb=8.0,
+        votes=300,
+        meta_score=70,
+        gross=3.0,
+        description="desc",
+        price=7.5,
+        certification=cert,
     )
 
     m.genres.append(g)
@@ -181,9 +248,16 @@ async def test_genre_star_director_many_to_many(session):
     assert [d.name for d in m_db.directors] == ["Dir One"]
 
     dup = MovieModel(
-        name="X", year=2022, time=120, imdb=5.0, votes=10,
-        meta_score=10, gross=0.0, description="dup", price=1.0,
-        certification=cert
+        name="X",
+        year=2022,
+        time=120,
+        imdb=5.0,
+        votes=10,
+        meta_score=10,
+        gross=0.0,
+        description="dup",
+        price=1.0,
+        certification=cert,
     )
     session.add(dup)
     with pytest.raises(exc.IntegrityError):
@@ -191,14 +265,20 @@ async def test_genre_star_director_many_to_many(session):
     await session.rollback()
 
 
-
 @pytest.mark.asyncio
 async def test_comment_and_likes_cascade(session):
     user = User(email="u@e", hashed_password="h", is_active=True, group_id=1)
     cert = CertificationModel(name="G")
     movie = MovieModel(
-        name="C", year=2021, time=90, imdb=7.5, votes=150,
-        meta_score=65, gross=2.5, description="d", price=4.5,
+        name="C",
+        year=2021,
+        time=90,
+        imdb=7.5,
+        votes=150,
+        meta_score=65,
+        gross=2.5,
+        description="d",
+        price=4.5,
         certification=cert,
     )
     session.add_all([user, cert, movie])
@@ -246,8 +326,15 @@ async def test_favorites_ratings_likes_notifications_purchases(session):
     user = User(email="fav@e", hashed_password="h", is_active=True, group_id=1)
     cert = CertificationModel(name="Z")
     movie = MovieModel(
-        name="F", year=2020, time=95, imdb=6.0, votes=80,
-        meta_score=55, gross=1.2, description="d", price=3.0,
+        name="F",
+        year=2020,
+        time=95,
+        imdb=6.0,
+        votes=80,
+        meta_score=55,
+        gross=1.2,
+        description="d",
+        price=3.0,
         certification=cert,
     )
     session.add_all([user, cert, movie])
@@ -276,10 +363,7 @@ async def test_favorites_ratings_likes_notifications_purchases(session):
     await session.rollback()
 
     note = NotificationModel(
-        user_id=uid,
-        text="you have mail",
-        is_read=0,
-        created_at=datetime.utcnow()
+        user_id=uid, text="you have mail", is_read=0, created_at=datetime.utcnow()
     )
     session.add(note)
     await session.commit()
@@ -305,34 +389,41 @@ async def test_create_order_and_items(session):
     await session.refresh(cert)
 
     movie1 = MovieModel(
-        name="M1", year=2021, time=100, imdb=8.0, votes=1000,
-        meta_score=80, gross=5.0, description="d", price=4.0,
-        certification_id=cert.id
+        name="M1",
+        year=2021,
+        time=100,
+        imdb=8.0,
+        votes=1000,
+        meta_score=80,
+        gross=5.0,
+        description="d",
+        price=4.0,
+        certification_id=cert.id,
     )
     movie2 = MovieModel(
-        name="M2", year=2022, time=110, imdb=7.5, votes=800,
-        meta_score=75, gross=4.0, description="d2", price=5.0,
-        certification_id=cert.id
+        name="M2",
+        year=2022,
+        time=110,
+        imdb=7.5,
+        votes=800,
+        meta_score=75,
+        gross=4.0,
+        description="d2",
+        price=5.0,
+        certification_id=cert.id,
     )
     session.add_all([movie1, movie2])
     await session.commit()
     await session.refresh(movie1)
     await session.refresh(movie2)
 
-    order = OrderModel(
-        user_id=user.id,
-        total_amount=movie1.price + movie2.price
-    )
-    order.items.append(
-        OrderItemModel(movie_id=movie1.id, price_at_order=movie1.price)
-    )
-    order.items.append(
-        OrderItemModel(movie_id=movie2.id, price_at_order=movie2.price)
-    )
+    order = OrderModel(user_id=user.id, total_amount=movie1.price + movie2.price)
+    order.items.append(OrderItemModel(movie_id=movie1.id, price_at_order=movie1.price))
+    order.items.append(OrderItemModel(movie_id=movie2.id, price_at_order=movie2.price))
     session.add(order)
     await session.commit()
 
-    await session.refresh(order, attribute_names=['items'])
+    await session.refresh(order, attribute_names=["items"])
 
     assert order.user_id == user.id
     assert order.status == OrderStatus.pending
@@ -353,9 +444,16 @@ async def test_order_items_cascade_and_status_change(session):
     await session.refresh(cert)
 
     movie = MovieModel(
-        name="X", year=2020, time=90, imdb=6.5, votes=500,
-        meta_score=60, gross=3.0, description="dx", price=3.5,
-        certification_id=cert.id
+        name="X",
+        year=2020,
+        time=90,
+        imdb=6.5,
+        votes=500,
+        meta_score=60,
+        gross=3.0,
+        description="dx",
+        price=3.5,
+        certification_id=cert.id,
     )
     session.add(movie)
     await session.commit()
@@ -385,10 +483,7 @@ async def test_order_items_cascade_and_status_change(session):
 async def test_user_group_and_tokens_relationships(session):
     group = UserGroup(name="testers")
     user = User(
-        email="foo@example.com",
-        hashed_password="hash",
-        is_active=True,
-        group=group
+        email="foo@example.com", hashed_password="hash", is_active=True, group=group
     )
     session.add(user)
     await session.commit()
@@ -432,15 +527,17 @@ async def test_user_group_and_tokens_relationships(session):
     tokens = {t.token for t in user.refresh_tokens}
     assert rt1.token in tokens and rt2.token in tokens
 
-    fetched = (await session.execute(
-        select(User)
-        .options(
-            selectinload(User.activation_token),
-            selectinload(User.password_reset_token),
-            selectinload(User.refresh_tokens),
+    fetched = (
+        await session.execute(
+            select(User)
+            .options(
+                selectinload(User.activation_token),
+                selectinload(User.password_reset_token),
+                selectinload(User.refresh_tokens),
+            )
+            .where(User.id == user.id)
         )
-        .where(User.id == user.id)
-    )).scalar_one()
+    ).scalar_one()
 
     assert fetched.activation_token.id == act.id
     assert fetched.password_reset_token.id == prt.id
@@ -451,10 +548,7 @@ async def test_user_group_and_tokens_relationships(session):
 async def test_cascade_delete_user_removes_tokens_and_group_untouched(session):
     group = UserGroup(name="admins")
     user = User(
-        email="bar@example.com",
-        hashed_password="hash2",
-        is_active=False,
-        group=group
+        email="bar@example.com", hashed_password="hash2", is_active=False, group=group
     )
     user.activation_token = ActivationToken(
         expires_at=datetime.utcnow() + timedelta(hours=2)
@@ -471,17 +565,17 @@ async def test_cascade_delete_user_removes_tokens_and_group_untouched(session):
 
     act_list = (await session.execute(select(ActivationToken))).scalars().all()
     prt_list = (await session.execute(select(PasswordResetToken))).scalars().all()
-    rt_list  = (await session.execute(select(RefreshToken))).scalars().all()
+    rt_list = (await session.execute(select(RefreshToken))).scalars().all()
     assert len(act_list) == 1
     assert len(prt_list) == 1
-    assert len(rt_list)  == 1
+    assert len(rt_list) == 1
 
     await session.delete(user)
     await session.commit()
 
     assert (await session.execute(select(ActivationToken))).scalars().all() == []
     assert (await session.execute(select(PasswordResetToken))).scalars().all() == []
-    assert (await session.execute(select(RefreshToken))).scalars().all()  == []
+    assert (await session.execute(select(RefreshToken))).scalars().all() == []
 
     remaining = (await session.execute(select(UserGroup))).scalars().all()
     names = [g.name for g in remaining]

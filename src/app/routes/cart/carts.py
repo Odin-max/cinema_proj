@@ -20,6 +20,7 @@ from app.models.order_models import OrderItemModel, OrderModel
 from app.schemas.cart_schema import CartItemCreate, CartItemRead, CartRead
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
@@ -117,7 +118,7 @@ async def clear_cart(
 @router.post("/checkout", response_class=HTMLResponse)
 async def checkout(
     request: Request,
-    current_user = Depends(get_current_user),
+    current_user=Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -134,25 +135,29 @@ async def checkout(
     for ci in cart.items:
         price = Decimal(ci.movie.price)
         total += price * ci.quantity
-        line_items.append({
-            "price_data": {
-                "currency": "usd",
-                "unit_amount": int(price * 100),
-                "product_data": {"name": ci.movie.name},
-            },
-            "quantity": ci.quantity,
-        })
+        line_items.append(
+            {
+                "price_data": {
+                    "currency": "usd",
+                    "unit_amount": int(price * 100),
+                    "product_data": {"name": ci.movie.name},
+                },
+                "quantity": ci.quantity,
+            }
+        )
 
     order = OrderModel(user_id=current_user.id, total_amount=total)
     db.add(order)
     await db.flush()
 
     for ci in cart.items:
-        db.add(OrderItemModel(
-            order_id=order.id,
-            movie_id=ci.movie_id,
-            price_at_order=Decimal(ci.movie.price),
-        ))
+        db.add(
+            OrderItemModel(
+                order_id=order.id,
+                movie_id=ci.movie_id,
+                price_at_order=Decimal(ci.movie.price),
+            )
+        )
 
     await db.execute(delete(CartItemModel).where(CartItemModel.cart_id == cart.id))
     await db.commit()
@@ -182,9 +187,7 @@ async def stripe_webhook(
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature", "")
     try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, WEBHOOK_SECRET
-        )
+        event = stripe.Webhook.construct_event(payload, sig_header, WEBHOOK_SECRET)
     except ValueError as e:
         print("Webhook payload error:", e)
         return Response(status_code=status.HTTP_400_BAD_REQUEST)
@@ -210,6 +213,7 @@ async def stripe_webhook(
         except Exception as e:
             print("Failed to update order status:", e)
     return Response(status_code=status.HTTP_200_OK)
+
 
 @router.get("/orders/success", response_class=HTMLResponse)
 async def order_success(session_id: str, db: AsyncSession = Depends(get_db)):
@@ -244,9 +248,7 @@ async def order_success(session_id: str, db: AsyncSession = Depends(get_db)):
 async def _load_and_build_cart(cart_id: int, db: AsyncSession) -> CartRead:
     q = await db.execute(
         select(CartItemModel)
-        .options(
-            selectinload(CartItemModel.movie).selectinload(MovieModel.genres)
-        )
+        .options(selectinload(CartItemModel.movie).selectinload(MovieModel.genres))
         .where(CartItemModel.cart_id == cart_id)
     )
     items_raw: List[CartItemModel] = q.scalars().all()

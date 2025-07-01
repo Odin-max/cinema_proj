@@ -27,6 +27,7 @@ router = APIRouter(
     dependencies=[Depends(get_current_moderator)],
 )
 
+
 @router.post(
     "/create_movie",
     response_model=MovieRead,
@@ -134,6 +135,7 @@ async def create_movie(
         directors=[d.name for d in full_movie.directors],
     )
 
+
 @router.get("/users/{user_id}", response_model=CartRead)
 async def get_user_cart(
     user_id: int,
@@ -152,14 +154,10 @@ async def list_orders(
     user_id: Optional[int] = Query(None, description="Filter by user id"),
     db: AsyncSession = Depends(get_db),
 ):
-    stmt = (
-        select(OrderModel)
-        .options(
-            selectinload(OrderModel.items)
-            .selectinload(OrderItemModel.movie)
-        )
+    stmt = select(OrderModel).options(
+        selectinload(OrderModel.items).selectinload(OrderItemModel.movie)
     )
-    
+
     if status is not None:
         stmt = stmt.where(OrderModel.status == status)
     if user_id is not None:
