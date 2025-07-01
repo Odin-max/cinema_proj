@@ -13,16 +13,14 @@ jobs:
     services:
       postgres:
         image: postgres:15
-        ports:
-          - 5432:5432
+        ports: ["5432:5432"]
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: postgres
       redis:
         image: redis:7-alpine
-        ports:
-          - 6379:6379
+        ports: ["6379:6379"]
 
     env:
       POSTGRES_USER:        ${{ secrets.POSTGRES_USER }}
@@ -48,23 +46,19 @@ jobs:
       STRIPE_WEBHOOK_SECRET:  ${{ secrets.STRIPE_WEBHOOK_SECRET }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/setup-python@v4
         with:
           python-version: 3.13
 
-      - name: Install Poetry
-        run: python -m pip install --upgrade pip poetry
+      - run: python -m pip install --upgrade pip poetry
 
-      - name: Install dependencies (incl. dev)
-        run: poetry install --no-root --with dev
+      - run: poetry install --no-root --with dev
 
       - name: Run DB migrations
+        # run from repo root so alembic.ini is found
         run: |
-          cd src
           poetry run alembic upgrade head
 
       - name: Run tests
