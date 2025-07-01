@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   test:
@@ -13,39 +13,41 @@ jobs:
     services:
       postgres:
         image: postgres:15
-        ports:
-          - 5432:5432
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+
       redis:
         image: redis:7-alpine
         ports:
           - 6379:6379
 
     env:
-      POSTGRES_USER:        ${{ secrets.POSTGRES_USER }}
-      POSTGRES_PASSWORD:    ${{ secrets.POSTGRES_PASSWORD }}
-      POSTGRES_DB:          ${{ secrets.POSTGRES_DB }}
-      POSTGRES_HOST:        localhost
-      POSTGRES_DB_PORT:     5432
-      DATABASE_URL:         postgresql+asyncpg://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@localhost:5432/${{ secrets.POSTGRES_DB }}
-      REDIS_URL:            redis://localhost:6379/0
-      CELERY_BROKER_URL:    redis://localhost:6379/0
+      # Для тестов используем секреты, подтянутые из GitHub Secrets
+      POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+      POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+      POSTGRES_HOST: localhost
+      POSTGRES_DB_PORT: 5432
+      DATABASE_URL: postgresql+asyncpg://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@localhost:5432/${{ secrets.POSTGRES_DB }}
+      REDIS_URL: redis://localhost:6379/0
+      CELERY_BROKER_URL: redis://localhost:6379/0
       CELERY_RESULT_BACKEND: redis://localhost:6379/1
-      SECRET_KEY_ACCESS:    ${{ secrets.SECRET_KEY_ACCESS }}
-      SECRET_KEY_REFRESH:   ${{ secrets.SECRET_KEY_REFRESH }}
+      SECRET_KEY_ACCESS: ${{ secrets.SECRET_KEY_ACCESS }}
+      SECRET_KEY_REFRESH: ${{ secrets.SECRET_KEY_REFRESH }}
       JWT_SIGNING_ALGORITHM: HS256
-      EMAIL_HOST:           localhost
-      EMAIL_PORT:           1025
-      EMAIL_HOST_USER:      noreply@localhost
-      EMAIL_HOST_PASSWORD:
-      EMAIL_USE_TLS:        "False"
-      BACKEND_URL:          http://localhost:8000
+      EMAIL_HOST: localhost
+      EMAIL_PORT: 1025
+      EMAIL_HOST_USER: noreply@localhost
+      EMAIL_HOST_PASSWORD: ""
+      EMAIL_USE_TLS: "False"
+      BACKEND_URL: http://localhost:8000
       STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
-      STRIPE_SECRET_KEY:      ${{ secrets.STRIPE_SECRET_KEY }}
-      STRIPE_WEBHOOK_SECRET:  ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
 
     steps:
       - name: Checkout code
@@ -56,28 +58,26 @@ jobs:
         with:
           python-version: 3.13
 
-      - name: Install Poetry
-        run: python -m pip install --upgrade pip poetry
+      - name: Install Poetry & Alembic
+        run: |
+          python -m pip install --upgrade pip
+          pip install poetry alembic
 
       - name: Install dependencies (incl. dev)
         run: poetry install --no-root --with dev
 
       - name: Run DB migrations
-        run: |
-          cd src
-          poetry run alembic upgrade head
+        # здесь не cd в src, т.к. alembic.ini находится в корне репозитория
+        run: poetry run alembic upgrade head
 
       - name: Run tests
-        run: |
-          cd src
-          poetry run pytest --maxfail=1 --disable-warnings -q
+        working-directory: src
+        run: pytest --maxfail=1 --disable-warnings -q
 
       - name: Check formatting with Black
-        run: |
-          cd src
-          poetry run black --check .
+        working-directory: src
+        run: poetry run black --check .
 
       - name: Check type hints with Mypy
-        run: |
-          cd src
-          poetry run mypy app
+        working-directory: src
+        run: poetry run mypy app
