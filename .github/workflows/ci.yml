@@ -1,0 +1,81 @@
+name: 📦 CI
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+env:
+  IMAGE_NAME: odin123/cinema_proj
+
+jobs:
+  lint:
+    name: Lint & format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Python 3.13
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.13"
+
+      - name: Install deps
+        run: |
+          pip install poetry
+          poetry install --no-root
+
+      - name: Black check
+        run: poetry run black --check .
+
+      - name: isort check
+        run: poetry run isort --check .
+
+      - name: Flake8
+        run: poetry run flake8 .
+
+  test:
+    name: Run tests
+    needs: lint
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: some_password
+          POSTGRES_DB: movies_db
+        ports: ["5433:5432"]
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+      mailhog:
+        image: mailhog/mailhog
+        ports: ["1025:1025", "8025:8025"]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Python 3.13
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.13"
+
+      - name: Install deps
+        run: |
+          pip install poetry
+          poetry install --no-root
+
+      - name: Run tests
+        run: |
+          set -o allexport
+          source .env
+          set +o allexport
+
+          export POSTGRES_HOST=127.0.0.1
+          export POSTGRES_DB_PORT=5433
+          export DATABASE_URL="postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:${POSTGRES_DB_PORT}/${POSTGRES_DB}"
+
+          poetry run pytest --maxfail=1 --disable-warnings --verbose
