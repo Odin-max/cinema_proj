@@ -32,7 +32,6 @@ coverage.xml
 
 # Environment variables and virtual environments
 .env
-.env.*
 .venv/
 venv/
 ENV/
