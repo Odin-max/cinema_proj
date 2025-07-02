@@ -31,7 +31,13 @@ This is a FastAPI-based microservice for a cinema application, featuring user re
    poetry install
    ```
 
+4. **To see all endpoints use:**
+   ```bash
+   127.0.0.1:8000/docs
+   ```
+
 ---
+
 
 ## 🚀 Running with Docker Compose
 
